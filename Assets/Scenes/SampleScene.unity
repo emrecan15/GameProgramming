@@ -718,6 +718,9 @@ MonoBehaviour:
   - {fileID: 3891183066976726858, guid: db85732ec3820934399d5d7c2d6ec5b8, type: 3}
   - {fileID: 7738698209782943608, guid: d74f5250ac649db40915fbdfcdd152c6, type: 3}
   poolSizePerPrefab: 5
+  coinPrefab: {fileID: 3828344839509127815, guid: aae408897e8f17f44aff9515a6e81535, type: 3}
+  coinPoolSize: 10
+  coinSpawnChance: 60
   playerTransform: {fileID: 1657530733}
   spawnDistanceZ: 60
   laneDistance: 3.3
@@ -920,6 +923,7 @@ MonoBehaviour:
   acceleration: 0.5
   turnAngle: 15
   turnSpeed: 15
+  score: 0
 --- !u!54 &1657530737
 Rigidbody:
   m_ObjectHideFlags: 0
