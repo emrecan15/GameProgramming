@@ -3,88 +3,126 @@ using UnityEngine;
 
 public class ObstacleSpawner : MonoBehaviour
 {
-	[Header("Havuz Ayarlarý")]
-	public GameObject[] obstaclePrefabs;
-	public int poolSizePerPrefab = 5;
-	private List<List<GameObject>> poolList;
+    [Header("Havuz Ayarlarý (Engeller)")]
+    public GameObject[] obstaclePrefabs;
+    public int poolSizePerPrefab = 5;
+    private List<List<GameObject>> poolList;
 
-	[Header("Doðma Ayarlarý")]
-	public Transform playerTransform;
-	public float spawnDistanceZ = 60f;
-	public float laneDistance = 3.5f;
+    [Header("Havuz Ayarlarý (Altýn)")]
+    public GameObject coinPrefab; // Altýn prefabýmýzý buraya koyacaðýz
+    public int coinPoolSize = 10;
+    private List<GameObject> coinPool;
+    [Range(0f, 100f)]
+    public float coinSpawnChance = 60f; // %60 ihtimalle altýn çýksýn
 
-	[Header("Zorluk Ayarlarý")]
-	public float spawnDistanceInterval = 25f;
+    [Header("Doðma Ayarlarý")]
+    public Transform playerTransform;
+    public float spawnDistanceZ = 60f;
+    public float laneDistance = 3.5f;
 
-	private float lastSpawnZ;
+    [Header("Zorluk Ayarlarý")]
+    public float spawnDistanceInterval = 25f;
 
-	void Start()
-	{
-		poolList = new List<List<GameObject>>();
+    private float lastSpawnZ;
 
-		for (int i = 0; i < obstaclePrefabs.Length; i++)
-		{
-			List<GameObject> objectPool = new List<GameObject>();
-			for (int j = 0; j < poolSizePerPrefab; j++)
-			{
-				GameObject obj = Instantiate(obstaclePrefabs[i]);
-				obj.SetActive(false);
-				objectPool.Add(obj);
-			}
-			poolList.Add(objectPool);
-		}
+    void Start()
+    {
+        // 1. ENGEL HAVUZUNU OLUÞTUR
+        poolList = new List<List<GameObject>>();
+        for (int i = 0; i < obstaclePrefabs.Length; i++)
+        {
+            List<GameObject> objectPool = new List<GameObject>();
+            for (int j = 0; j < poolSizePerPrefab; j++)
+            {
+                GameObject obj = Instantiate(obstaclePrefabs[i]);
+                obj.SetActive(false);
+                objectPool.Add(obj);
+            }
+            poolList.Add(objectPool);
+        }
 
-		lastSpawnZ = playerTransform.position.z;
-	}
+        // 2. ALTIN HAVUZUNU OLUÞTUR
+        coinPool = new List<GameObject>();
+        for (int i = 0; i < coinPoolSize; i++)
+        {
+            GameObject coin = Instantiate(coinPrefab);
+            coin.SetActive(false);
+            coinPool.Add(coin);
+        }
 
-	void Update()
-	{
-		if (playerTransform.position.z - lastSpawnZ >= spawnDistanceInterval)
-		{
-			SpawnObstacle();
-			lastSpawnZ = playerTransform.position.z;
-		}
-	}
+        lastSpawnZ = playerTransform.position.z;
+    }
 
-	void SpawnObstacle()
-	{
-		int randomObstacleIndex = Random.Range(0, obstaclePrefabs.Length);
+    void Update()
+    {
+        if (playerTransform.position.z - lastSpawnZ >= spawnDistanceInterval)
+        {
+            SpawnObstacleAndCoin();
+            lastSpawnZ = playerTransform.position.z;
+        }
+    }
 
-		GameObject obstacle = GetPooledObject(randomObstacleIndex);
+    void SpawnObstacleAndCoin()
+    {
+        // --- ENGEL ÇIKARMA ---
+        int randomObstacleIndex = Random.Range(0, obstaclePrefabs.Length);
+        GameObject obstacle = GetPooledObstacle(randomObstacleIndex);
+        int obstacleLane = Random.Range(0, 3); // Engelin çýkacaðý þerit
 
-		if (obstacle != null)
-		{
-			int randomLane = Random.Range(0, 3);
-			float xPos = (randomLane - 1) * laneDistance;
+        if (obstacle != null)
+        {
+            float xPos = (obstacleLane - 1) * laneDistance;
+            float originalY = obstacle.transform.position.y;
+            obstacle.transform.position = new Vector3(xPos, originalY, playerTransform.position.z + spawnDistanceZ);
+            obstacle.SetActive(true);
+        }
 
-			// 1. YENÝ EKLENEN KISIM: Objenin Inspector'da ayarladýðýn orijinal Y deðerini al
-			float originalY = obstacle.transform.position.y;
+        // --- ALTIN ÇIKARMA ---
+        if (Random.Range(0f, 100f) <= coinSpawnChance)
+        {
+            GameObject coin = GetPooledCoin();
+            if (coin != null)
+            {
+                // Altýn, engelin OLAMADIÐI rastgele bir þeritte çýksýn ki üst üste binmesinler
+                int coinLane;
+                do
+                {
+                    coinLane = Random.Range(0, 3);
+                } while (coinLane == obstacleLane);
 
-			// 2. DEÐÝÞEN KISIM: Sabit 0.5f yerine originalY deðerini kullan!
-			obstacle.transform.position = new Vector3(xPos, originalY, playerTransform.position.z + spawnDistanceZ);
+                float coinXPos = (coinLane - 1) * laneDistance;
+                float coinY = coinPrefab.transform.position.y;
+                coin.transform.position = new Vector3(coinXPos, coinY, playerTransform.position.z + spawnDistanceZ);
+                coin.SetActive(true);
+            }
+        }
+    }
 
-			obstacle.SetActive(true);
-		}
-	}
+    // ENGEL HAVUZU KONTROLÜ
+    GameObject GetPooledObstacle(int index)
+    {
+        for (int i = 0; i < poolList[index].Count; i++)
+        {
+            if (!poolList[index][i].activeInHierarchy)
+                return poolList[index][i];
+        }
+        GameObject newObj = Instantiate(obstaclePrefabs[index]);
+        newObj.SetActive(false);
+        poolList[index].Add(newObj);
+        return newObj;
+    }
 
-	// GÜNCELLENEN KISIM: DÝNAMÝK HAVUZ
-	GameObject GetPooledObject(int index)
-	{
-		// 1. Önce havuzda boþta olan var mý diye bak
-		for (int i = 0; i < poolList[index].Count; i++)
-		{
-			if (!poolList[index][i].activeInHierarchy)
-			{
-				return poolList[index][i];
-			}
-		}
-
-		// 2. EÐER HAVUZDA BOÞTA ENGEL KALMADIYSA, YENÝDEN ÜRET VE HAVUZA EKLE!
-		// Bu sayede oyun hiçbir zaman "engel bulamadým" demez, sonsuza kadar çalýþýr.
-		GameObject newObj = Instantiate(obstaclePrefabs[index]);
-		newObj.SetActive(false);
-		poolList[index].Add(newObj);
-
-		return newObj;
-	}
+    // ALTIN HAVUZU KONTROLÜ
+    GameObject GetPooledCoin()
+    {
+        for (int i = 0; i < coinPool.Count; i++)
+        {
+            if (!coinPool[i].activeInHierarchy)
+                return coinPool[i];
+        }
+        GameObject newCoin = Instantiate(coinPrefab);
+        newCoin.SetActive(false);
+        coinPool.Add(newCoin);
+        return newCoin;
+    }
 }
