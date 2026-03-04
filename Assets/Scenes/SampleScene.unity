@@ -717,6 +717,7 @@ MonoBehaviour:
   - {fileID: 1671958507336764577, guid: ccd706a16ea864941a9cabb4857796a1, type: 3}
   - {fileID: 3891183066976726858, guid: db85732ec3820934399d5d7c2d6ec5b8, type: 3}
   - {fileID: 7738698209782943608, guid: d74f5250ac649db40915fbdfcdd152c6, type: 3}
+  - {fileID: 2323364943475123365, guid: 15f26c55b72bb724da45119747d2ad3d, type: 3}
   poolSizePerPrefab: 5
   coinPrefab: {fileID: 3828344839509127815, guid: aae408897e8f17f44aff9515a6e81535, type: 3}
   coinPoolSize: 10
@@ -825,7 +826,7 @@ PrefabInstance:
       addedObject: {fileID: 1657530737}
     - targetCorrespondingSourceObject: {fileID: 5621057211259534690, guid: de4d60cef052cf44599a5d782e4a011e, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1657530741}
+      addedObject: {fileID: 1657530744}
   m_SourcePrefab: {fileID: 100100000, guid: de4d60cef052cf44599a5d782e4a011e, type: 3}
 --- !u!4 &1284672301 stripped
 Transform:
@@ -951,8 +952,8 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!64 &1657530741
-MeshCollider:
+--- !u!65 &1657530744
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -969,10 +970,9 @@ MeshCollider:
   m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: -416253003525793337, guid: f6ebaa94097f3da47a01d47be07f26f3, type: 3}
+  serializedVersion: 3
+  m_Size: {x: 2.1489556, y: 1.1081697, z: 4.720191}
+  m_Center: {x: 0.3336132, y: 0.4772931, z: 0.04107213}
 --- !u!4 &1875569312 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5775766926367942530, guid: de4d60cef052cf44599a5d782e4a011e, type: 3}
