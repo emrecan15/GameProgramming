@@ -3,6 +3,87 @@ using UnityEngine.InputSystem;
 
 public class CarController : MonoBehaviour
 {
+	[Header("Temel Hareket")]
+	public float laneDistance = 3.0f;
+	public float forwardSpeed = 20.0f;
+	public float laneChangeSpeed = 10.0f;
+
+	[Header("Zorluk (Hýzlanma) Ayarlarý")]
+	public float maxSpeed = 50.0f;
+	public float acceleration = 0.5f;
+
+	[Header("Dönüþ Ayarlarý")]
+	public float turnAngle = 15.0f;
+	public float turnSpeed = 15.0f;
+
+	private int currentLane = 1; // 0: Sol, 1: Orta, 2: Sað
+
+	void Update()
+	{
+		// 1. ZORLUK ARTIRIMI (Ývmelenme)
+		if (forwardSpeed < maxSpeed)
+		{
+			forwardSpeed += acceleration * Time.deltaTime;
+		}
+
+		// 2. KONTROLLER (Input System)
+		if (Keyboard.current != null)
+		{
+			if (Keyboard.current.rightArrowKey.wasPressedThisFrame || Keyboard.current.dKey.wasPressedThisFrame)
+			{
+				currentLane++;
+				if (currentLane > 2) currentLane = 2;
+			}
+
+			if (Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.aKey.wasPressedThisFrame)
+			{
+				currentLane--;
+				if (currentLane < 0) currentLane = 0;
+			}
+		}
+
+		// 3. ÝLERÝ GÝDÝÞ (Sabit Hýz)
+		transform.Translate(Vector3.forward * forwardSpeed * Time.deltaTime, Space.World);
+
+		// 4. SAÐA/SOLA GEÇÝÞ (Yumuþak Hýz - X Ekseni)
+		float targetX = (currentLane - 1) * laneDistance;
+		float smoothX = Mathf.Lerp(transform.position.x, targetX, laneChangeSpeed * Time.deltaTime);
+		transform.position = new Vector3(smoothX, transform.position.y, transform.position.z);
+
+		// 5. YÖNELME (STEERING - Burnunu Çevirme)
+		float xDiff = targetX - transform.position.x;
+		float targetRotationY = xDiff * turnAngle;
+		Quaternion targetRotation = Quaternion.Euler(0, targetRotationY, 0);
+		transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+	}
+
+	// 6. ÇARPIÞMA KONTROLÜ
+	private void OnTriggerEnter(Collider other)
+	{
+		if (other.CompareTag("Obstacle"))
+		{
+			// GameManager'a oyunun bittiðini söylüyoruz
+			if (GameManager.Instance != null)
+				GameManager.Instance.GameOver();
+		}
+		else if (other.CompareTag("Coin"))
+		{
+			// GameManager'a altýný aldýðýmýzý söylüyoruz
+			if (GameManager.Instance != null)
+				GameManager.Instance.AddCoin();
+
+			// Altýný havuza geri gönderiyoruz (SetActive false)
+			other.gameObject.SetActive(false);
+		}
+	}
+}
+
+/* old version
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class CarController : MonoBehaviour
+{
     [Header("Temel Hareket")]
     public float laneDistance = 3.0f;
     public float forwardSpeed = 20.0f;
@@ -81,3 +162,5 @@ public class CarController : MonoBehaviour
         }
     }
 }
+
+*/
