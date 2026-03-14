@@ -6,14 +6,19 @@ public class RoadManager : MonoBehaviour
     [Header("Normal Roads")]
     public GameObject[] roadPrefabs;
 
+    [Header("Bridges (Ã–zel Yollar)")]
+    public GameObject[] bridgePrefabs; // KÃ¶prÃ¼leri buraya koyacaÄŸÄ±z
+    [Range(0f, 100f)] public float bridgeChance = 15f; // KÃ¶prÃ¼ Ã§Ä±kma ihtimali
+
     [Header("Tunnel Sequence")]
     public GameObject tunnelStartPrefab;
     public GameObject tunnelMiddlePrefab;
     public GameObject tunnelEndPrefab;
+    [Range(0f, 100f)] public float tunnelChance = 15f; 
+    public int tunnelMiddleCount = 3; 
 
-    [Range(0f, 100f)]
-    public float tunnelChance = 15f; // Tünel çýkma ihtimali (%15)
-    public int tunnelMiddleCount = 3; // Tünelin ortasýna kaç parça eklenecek
+    [Header("Pacing (Spam Engelleme)")]
+    public int minRoadsBetweenSpecials = 5; // Ä°ki Ã¶zel yol (tÃ¼nel/kÃ¶prÃ¼) arasÄ±na girecek MÄ°NÄ°MUM normal yol sayÄ±sÄ±
 
     [Header("General Settings")]
     public Transform playerTransform;
@@ -23,19 +28,20 @@ public class RoadManager : MonoBehaviour
 
     private List<GameObject> activeRoads = new List<GameObject>();
 
-    // Tünel sýrasýný takip edecek gizli deðiþkenler
+    // Arka plan takip deÄŸiÅŸkenleri
     private bool isSpawningTunnel = false;
     private int spawnedMiddleCount = 0;
+    private int normalRoadsSinceLastSpecial = 0; // Cooldown sayacÄ±
 
     void Start()
     {
         for (int i = 0; i < amountOfRoadsOnScreen; i++)
         {
-            // Oyun baþladýðýnda arabanýn direkt tünel içinde doðmamasý için
-            // ilk yollarý garanti olarak dizideki 0. normal yol yapýyoruz.
+            // Oyun baÅŸlarken kafamÄ±za kÃ¶prÃ¼/tÃ¼nel dÃ¼ÅŸmesin diye ilk yollar garanti normal yol
             GameObject go = Instantiate(roadPrefabs[0], transform.forward * spawnZ, transform.rotation);
             activeRoads.Add(go);
             spawnZ += roadLength;
+            normalRoadsSinceLastSpecial++; // BaÅŸlangÄ±Ã§ yollarÄ±nÄ± da say
         }
     }
 
@@ -52,38 +58,59 @@ public class RoadManager : MonoBehaviour
     {
         GameObject roadToSpawn;
 
-        // 1. Tünel dizilimi devam ediyorsa
+        // 1. TÃœNEL Ä°Ã‡Ä°NDEYSEK (SÄ±ralÄ± Sistem Devam Ediyor)
         if (isSpawningTunnel)
         {
             if (spawnedMiddleCount < tunnelMiddleCount)
             {
-                roadToSpawn = tunnelMiddlePrefab; // Tünel içini ekle
+                roadToSpawn = tunnelMiddlePrefab;
                 spawnedMiddleCount++;
             }
             else
             {
-                roadToSpawn = tunnelEndPrefab; // Tünel çýkýþýný ekle ve tüneli bitir
+                roadToSpawn = tunnelEndPrefab;
                 isSpawningTunnel = false;
+                normalRoadsSinceLastSpecial = 0; // TÃ¼nel bitti, sayacÄ± sÄ±fÄ±rla (cooldown baÅŸlasÄ±n)
             }
         }
-        // 2. Normal yoldaysak ve rastgele seçim yapýlýyorsa
         else
         {
-            if (Random.Range(0f, 100f) <= tunnelChance)
+            // 2. COOLDOWN KONTROLÃœ (Yeterince normal yol geÃ§miÅŸ mi?)
+            if (normalRoadsSinceLastSpecial >= minRoadsBetweenSpecials)
             {
-                roadToSpawn = tunnelStartPrefab; // Tüneli baþlat
-                isSpawningTunnel = true;
-                spawnedMiddleCount = 0;
+                float randomValue = Random.Range(0f, 100f);
+
+                // TÃ¼nel mi gelsin?
+                if (randomValue <= tunnelChance)
+                {
+                    roadToSpawn = tunnelStartPrefab;
+                    isSpawningTunnel = true;
+                    spawnedMiddleCount = 0;
+                }
+                // KÃ¶prÃ¼ mÃ¼ gelsin?
+                else if (randomValue <= (tunnelChance + bridgeChance))
+                {
+                    int bIndex = Random.Range(0, bridgePrefabs.Length);
+                    roadToSpawn = bridgePrefabs[bIndex];
+                    normalRoadsSinceLastSpecial = 0; // KÃ¶prÃ¼ koyduk, sayacÄ± sÄ±fÄ±rla!
+                }
+                // Åžans tutmadÄ±, normal yol
+                else
+                {
+                    int rIndex = Random.Range(0, roadPrefabs.Length);
+                    roadToSpawn = roadPrefabs[rIndex];
+                    normalRoadsSinceLastSpecial++; // Normal yol koydukÃ§a sayacÄ± artÄ±r
+                }
             }
+            // 3. COOLDOWN DOLMADIYSA ZORUNLU NORMAL YOL
             else
             {
-                // Tünel denk gelmediyse normal yollardan rastgele seç
-                int randomIndex = Random.Range(0, roadPrefabs.Length);
-                roadToSpawn = roadPrefabs[randomIndex];
+                int rIndex = Random.Range(0, roadPrefabs.Length);
+                roadToSpawn = roadPrefabs[rIndex];
+                normalRoadsSinceLastSpecial++;
             }
         }
 
-        // Seçilen yolu sahneye yerleþtirme iþlemi (Orijinal kodun)
         GameObject go = Instantiate(roadToSpawn, transform.forward * spawnZ, transform.rotation);
         activeRoads.Add(go);
         spawnZ += roadLength;
